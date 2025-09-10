@@ -1,0 +1,19 @@
+/* Add a bit more vertical spacing for a cleaner look */
+body {
+    padding: 2rem 0;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+/* Ensure table cells are vertically aligned in the middle */
+table td, table th {
+    vertical-align: middle;
+}
+
+/* Style for indicating loading state on the submit button */
+button[aria-busy="true"] {
+    color: transparent;
+}

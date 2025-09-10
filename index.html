@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oldtree Stock Management</title>
+    <!-- Pico.css for professional styling with minimal effort -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <!-- Our custom stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="container">
+        <header>
+            <h1>Oldtree Stock Management</h1>
+            <p>A real-time view of your inventory levels.</p>
+        </header>
+
+        <div class="grid">
+            <!-- Section for displaying current stock -->
+            <section>
+                <article>
+                    <header>
+                        <h2>Current Stock Levels</h2>
+                    </header>
+                    <figure>
+                        <table role="grid">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Variant (Size/Color)</th>
+                                    <th>Location</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stock-table-body">
+                                <!-- JavaScript will populate this section -->
+                                <tr>
+                                    <td colspan="4" aria-busy="true">Loading stock data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </figure>
+                </article>
+            </section>
+
+            <!-- Section for registering a new movement -->
+            <section>
+                <article>
+                    <header>
+                        <h2>Register New Movement</h2>
+                    </header>
+                    <form id="movement-form">
+                        <label for="variant-select">Product Variant</label>
+                        <select id="variant-select" name="product_variant" required>
+                            <option value="" disabled selected>Loading variants...</option>
+                            <!-- JavaScript will populate this dropdown -->
+                        </select>
+
+                        <label for="location-select">Location</label>
+                        <select id="location-select" name="location" required>
+                            <option value="" disabled selected>Loading locations...</option>
+                            <!-- JavaScript will populate this dropdown -->
+                        </select>
+
+                        <label for="quantity-change">Quantity Change</label>
+                        <input type="number" id="quantity-change" name="quantity_change" placeholder="e.g., -1 for a sale, 10 for restock" required>
+
+                        <label for="notes">Notes (Optional)</label>
+                        <input type="text" id="notes" name="notes" placeholder="e.g., Venta Boleta #1234">
+
+                        <button type="submit" id="submit-button">Submit Movement</button>
+                    </form>
+                </article>
+            </section>
+        </div>
+    </main>
+
+    <!-- Our custom JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
