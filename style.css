@@ -1,19 +1,19 @@
-/* Add a bit more vertical spacing for a cleaner look */
-body {
-    padding: 2rem 0;
+/* Ensure the table has a minimum height to prevent layout shifts during loading */
+.table-responsive {
+    min-height: 300px;
 }
 
-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-/* Ensure table cells are vertically aligned in the middle */
-table td, table th {
+/* Vertically align table content for a cleaner look */
+.table td, .table th {
     vertical-align: middle;
 }
 
-/* Style for indicating loading state on the submit button */
-button[aria-busy="true"] {
-    color: transparent;
+/* Custom styling for the submit button when it's in a loading state */
+#submit-button.is-loading {
+    cursor: not-allowed;
+}
+
+/* Hide the spinner text but keep it accessible */
+#submit-button.is-loading .button-text {
+    display: none;
 }

@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURATION ---
-    // IMPORTANT: Replace this with your actual Render API URL!
-    const API_BASE_URL = 'https://oldtree-api.onrender.com'; // Example URL
+    // IMPORTANT: Replace this with your live Render API URL!
+    const API_BASE_URL = 'https://oldtree-api.onrender.com'; // <<-- YOUR URL HERE
 
     // --- ELEMENT SELECTORS ---
     const stockTableBody = document.getElementById('stock-table-body');
@@ -10,74 +10,83 @@ document.addEventListener('DOMContentLoaded', () => {
     const variantSelect = document.getElementById('variant-select');
     const locationSelect = document.getElementById('location-select');
     const submitButton = document.getElementById('submit-button');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const emptyState = document.getElementById('empty-state');
+    const refreshButton = document.getElementById('refresh-button');
 
-    // --- API HELPER FUNCTIONS ---
+    // --- HELPER FUNCTIONS FOR UI STATE ---
 
-    /**
-     * Fetches current stock levels and populates the main table.
-     */
+    const showLoading = (isLoading) => {
+        loadingSpinner.style.display = isLoading ? 'block' : 'none';
+        stockTableBody.style.display = isLoading ? 'none' : '';
+    };
+
+    const showEmptyState = (isEmpty) => {
+        emptyState.style.display = isEmpty ? 'block' : 'none';
+    };
+
+    // --- API FUNCTIONS ---
+
     const fetchAndPopulateTable = async () => {
+        showLoading(true);
+        showEmptyState(false);
         try {
             const response = await fetch(`${API_BASE_URL}/api/stock-levels/`);
             if (!response.ok) throw new Error('Network response was not ok');
             const stockLevels = await response.json();
 
-            // Clear the "loading..." message or any existing data
-            stockTableBody.innerHTML = '';
+            stockTableBody.innerHTML = ''; // Clear existing data
 
             if (stockLevels.length === 0) {
-                stockTableBody.innerHTML = '<tr><td colspan="4">No stock data found.</td></tr>';
-                return;
+                showEmptyState(true);
+            } else {
+                stockLevels.sort((a, b) => a.product_variant.product.localeCompare(b.product_variant.product)); // Sort by product name
+                stockLevels.forEach(item => {
+                    const row = `
+                        <tr>
+                            <td>${item.product_variant.product}</td>
+                            <td><small class="text-muted">${item.product_variant.size} / ${item.product_variant.color}</small></td>
+                            <td>${item.location.name}</td>
+                            <td class="text-end fw-bold">${item.quantity}</td>
+                        </tr>
+                    `;
+                    stockTableBody.innerHTML += row;
+                });
             }
-
-            // Populate the table with data
-            stockLevels.forEach(item => {
-                const row = `
-                    <tr>
-                        <td>${item.product_variant.product}</td>
-                        <td>Size: ${item.product_variant.size}, Color: ${item.product_variant.color}</td>
-                        <td>${item.location.name}</td>
-                        <td><strong>${item.quantity}</strong></td>
-                    </tr>
-                `;
-                stockTableBody.innerHTML += row;
-            });
-
         } catch (error) {
             console.error('Error fetching stock levels:', error);
-            stockTableBody.innerHTML = '<tr><td colspan="4">Failed to load data. Please try again later.</td></tr>';
+            Swal.fire({
+                icon: 'error',
+                title: 'Failed to Load Stock Data',
+                text: 'Could not connect to the server. Please try again later.',
+            });
+            showEmptyState(true);
+        } finally {
+            showLoading(false);
         }
     };
 
-    /**
-     * Fetches product variants and locations to populate the form's dropdowns.
-     */
     const fetchAndPopulateDropdowns = async () => {
         try {
-            // Fetch variants and locations in parallel for efficiency
             const [variantsRes, locationsRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/variants/`),
                 fetch(`${API_BASE_URL}/api/locations/`)
             ]);
-
             if (!variantsRes.ok || !locationsRes.ok) throw new Error('Failed to fetch form data');
             
             const variants = await variantsRes.json();
             const locations = await locationsRes.json();
 
-            // Populate Variants Dropdown
             variantSelect.innerHTML = '<option value="" disabled selected>Select a variant</option>';
             variants.forEach(v => {
                 const optionText = `${v.product} - ${v.size}/${v.color} (${v.unique_sku})`;
                 variantSelect.innerHTML += `<option value="${v.id}">${optionText}</option>`;
             });
 
-            // Populate Locations Dropdown
             locationSelect.innerHTML = '<option value="" disabled selected>Select a location</option>';
             locations.forEach(loc => {
                 locationSelect.innerHTML += `<option value="${loc.id}">${loc.name}</option>`;
             });
-
         } catch (error) {
             console.error('Error fetching dropdown data:', error);
             variantSelect.innerHTML = '<option value="" disabled>Error loading variants</option>';
@@ -85,15 +94,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    /**
-     * Handles the form submission to create a new stock movement.
-     */
     const handleFormSubmit = async (event) => {
-        event.preventDefault(); // Prevent the default browser refresh
-
-        // Show loading state
-        submitButton.setAttribute('aria-busy', 'true');
+        event.preventDefault();
+        
+        // Visual feedback for submission
         submitButton.disabled = true;
+        submitButton.innerHTML = `
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Submitting...
+        `;
 
         const formData = new FormData(movementForm);
         const data = {
@@ -106,37 +115,44 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/stock-movements/`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(`Failed to submit movement: ${JSON.stringify(errorData)}`);
+                throw new Error(JSON.stringify(errorData));
             }
             
-            // It worked!
-            movementForm.reset(); // Clear the form for the next entry
-            await fetchAndPopulateTable(); // Refresh the table to show the new stock level instantly!
+            movementForm.reset();
+            await fetchAndPopulateTable();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Movement Registered!',
+                showConfirmButton: false,
+                timer: 1500
+            });
 
         } catch (error) {
             console.error('Form submission error:', error);
-            alert('There was an error submitting the movement. Please check the console for details.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Submission Failed',
+                text: 'There was an error submitting the movement. Please check the data and try again.',
+            });
         } finally {
-            // Restore button to normal state
-            submitButton.removeAttribute('aria-busy');
+            // Restore button state
             submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="bi bi-check-circle-fill"></i> Submit Movement';
         }
     };
 
-    // --- INITIALIZATION ---
-    
-    // Add event listener for the form
+    // --- EVENT LISTENERS ---
     movementForm.addEventListener('submit', handleFormSubmit);
+    refreshButton.addEventListener('click', fetchAndPopulateTable);
 
-    // Initial data load when the page is ready
+    // --- INITIALIZATION ---
     fetchAndPopulateTable();
     fetchAndPopulateDropdowns();
 });
